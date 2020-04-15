@@ -6,11 +6,12 @@ AllCells = True;
 epsilon = 0.0000001;
 
 projectTo3d[vertex4d_] := {vertex4d[[1]], vertex4d[[2]], vertex4d[[3]]};
-reflect[point_, mirror_] := FullSimplify[point - 2 * (point.mirror)/(mirror.mirror)*mirror];
+reflect[point_, mirror_] := Simplify[point - 2 * (point.mirror)/(mirror.mirror)*mirror];
 doubleReflect[point_, mirror1_, mirror2_] := reflect[reflect[point, mirror1], mirror2];
 getEdgesFromFace[face_] := Table[{face[[i+1]], face[[Mod[i+1, Length[face]] + 1]]}, {i, 0, Length[face] - 1}];
 explodedFace[face_, explosionFactor_] := Map[(# + Mean[face] * explosionFactor)&, face];
 sameVertex[point1_, point2_] := point1 == point2;
+sameNVertex[point1_, point2_] := Norm[N[point1] - N[point2]] < epsilon;
 sameCenter[edge1_, edge2_] := Total[edge1] == Total[edge2];
 sameCellCenter[cell1_, cell2_] := getCellCenter[cell1] == getCellCenter[cell2];
 getCellCenter[cell_] := Total[Flatten[cell, 1]];
@@ -76,19 +77,54 @@ phi = (1 + Sqrt[5])/2;
 
 vertex1 = {1, 1, 1 + 4 phi, 5 + 12 phi};
 mirrors = {
-			{1, phi, -1/phi, 0	},
-			{1, 0, 0, 0	},
-			{1, -phi, 1/phi, 0	},
-			{1, 0, phi, -1/phi	}
-		  };
+	{0, 1, 0, 0	},
+	{1, phi, -1/phi, 0	},
+	{1, -phi, 1/phi, 0	},
+	{1, 0, phi, -1/phi	}
+};
 
-edge1 = {vertex1, reflect[vertex1, mirrors[[1]]]};
-edge2 = {vertex1, reflect[vertex1, mirrors[[2]]]};
-Print[edge1];
-Print[edge2];
+vertices = {vertex1};
+countStart = -1;
+For[i = 0, i < 2 && countStart != Length[vertices], i++,
+	countStart = Length[vertices];
+	For[mirrorIndex = 4, mirrorIndex >= 1, mirrorIndex--,
+		vertices = Union[vertices, Map[reflect[#, mirrors[[mirrorIndex]] ]&, vertices], 
+			SameTest -> sameNVertex];
+	];
+	Print[{i, Length[vertices]}];
+];
 
-face6 = getFace[{edge1, edge2}, mirrors[[{1, 2}]]];
-Print[face6//Length];
+neighbors = Select[vertices, Abs[Norm[N[#] - vertex1] - 2] < epsilon &];
+
+neighborMirrors = Map[#-vertex1&, neighbors]//Simplify;
+Print["mirrors"];
+Print[neighborMirrors];
+
+neighborEdges = Map[{vertex1, reflect[vertex1, #]}&, neighborMirrors];
+Print["neighborEdges"];
+Print[neighborEdges];
+
+edgeIndices = Subsets[{1, 2, 3, 4}, {2}];
+Print["edgeIndices"];
+Print[edgeIndices];
+
+neighborFaces = Map[getFace[neighborEdges[[#]], neighborMirrors[[#]]]&, edgeIndices];
+Print["polygon sides"];
+Print[Length/@neighborFaces];
+
+cell1 = neighborFaces[[{2, 3, 6}]];
+activeMirrors = neighborMirrors[[{1, 3, 4}]];
+
+countStart = -1;
+For[i=0, i < 100 && countStart != Length[cell1], i++,
+	countStart = Length[cell1];
+	For[mirrorIndex = Length[activeMirrors], mirrorIndex >= 1, mirrorIndex--,
+		Print[{countStart, mirrorIndex}];
+		cell1 = Union[cell1, Map[reflect[#, activeMirrors[[mirrorIndex]] ]&, cell1, {2}], 
+			SameTest -> sameCenter];
+	];
+]
+Print["Each cell contains " <> IntegerString[Length[cell1]] <> " faces."];
 
 
 (* seeds = {
