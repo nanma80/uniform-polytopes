@@ -4,6 +4,7 @@
 dataFolder = "data";
 AllCells = True;
 epsilon = 0.0000001;
+dataFileName = FileNameJoin[{dataFolder, "omni_120.wl"}];
 
 projectTo3d[vertex4d_] := {vertex4d[[1]], vertex4d[[2]], vertex4d[[3]]};
 reflect[point_, mirror_] := Simplify[point - 2 * (point.mirror)/(mirror.mirror)*mirror];
@@ -14,7 +15,8 @@ sameVertex[point1_, point2_] := point1 == point2;
 sameNVertex[point1_, point2_] := Norm[N[point1] - N[point2]] < epsilon;
 sameCenter[edge1_, edge2_] := Total[edge1] == Total[edge2];
 sameCellCenter[cell1_, cell2_] := getCellCenter[cell1] == getCellCenter[cell2];
-getCellCenter[cell_] := Total[Flatten[cell, 1]];
+sameNCellCenter[cell1_, cell2_] := Norm[getCellCenter[N[cell1]] - getCellCenter[N[cell2]]] < epsilon;
+getCellCenter[cell_] := Mean[Flatten[cell, 1]];
 getFace[initialEdges_, mirrors_] := Module[
 	{face1, countStart, i, mirrorIndex, edgeMap, edge, vertices},
 
@@ -71,7 +73,21 @@ getFace[initialEdges_, mirrors_] := Module[
 	flatFace1
 ];
 
-dataFileName = FileNameJoin[{dataFolder, "omni_120.wl"}];
+getCell[initialFaces_, activeMirrors_] := Module[
+    {countStart, i, mirrorIndex},
+    cell = Simplify[initialFaces];
+    countStart = -1;
+    For[i = 0, i < 100 && countStart != Length[cell], i++,
+        countStart = Length[cell];
+        For[mirrorIndex = Length[activeMirrors], mirrorIndex >= 1, mirrorIndex--,
+            (* Print[{countStart, mirrorIndex}]; *)
+            cell = Union[cell, Map[reflect[#, activeMirrors[[mirrorIndex]] ]&, cell, {2}], 
+                SameTest -> sameCenter];
+        ];
+    ];
+    cell
+];
+
 
 phi = (1 + Sqrt[5])/2;
 
@@ -83,6 +99,7 @@ mirrors = {
 	{1, 0, phi, -1/phi	}
 };
 
+Print["generating neighbors of vertex1"];
 vertices = {vertex1};
 countStart = -1;
 For[i = 0, i < 2 && countStart != Length[vertices], i++,
@@ -97,14 +114,10 @@ For[i = 0, i < 2 && countStart != Length[vertices], i++,
 neighbors = Select[vertices, Abs[Norm[N[#] - vertex1] - 2] < epsilon &];
 
 neighborMirrors = Map[#-vertex1&, neighbors]//Simplify;
-Print["mirrors"];
-Print[neighborMirrors];
 
 neighborEdges = Map[{vertex1, reflect[vertex1, #]}&, neighborMirrors];
-Print["neighborEdges"];
-Print[neighborEdges];
 
-edgeIndices = Subsets[{1, 2, 3, 4}, {2}];
+edgeIndices = Subsets[Range[4], {2}];
 Print["edgeIndices"];
 Print[edgeIndices];
 
@@ -112,78 +125,34 @@ neighborFaces = Map[getFace[neighborEdges[[#]], neighborMirrors[[#]]]&, edgeIndi
 Print["polygon sides"];
 Print[Length/@neighborFaces];
 
-cell1 = neighborFaces[[{2, 3, 6}]];
-activeMirrors = neighborMirrors[[{1, 3, 4}]];
+neighborCells = {};
+For[excludeMirrorIndex = 1, excludeMirrorIndex <= 4 , excludeMirrorIndex++,
+    mirrorIndices = Complement[Range[4], {excludeMirrorIndex}];
+    initialFaceIndices = Select[ Range[Length[edgeIndices]], ContainsAll[mirrorIndices, edgeIndices[[#]]]&];
+    newCell = getCell[neighborFaces[[initialFaceIndices]], neighborMirrors[[mirrorIndices]]];
+    Print["new cell:"];
+    Print[Length[newCell]];
+    Print[Tally[Map[Length, newCell]]];
+    AppendTo[neighborCells, newCell];
+];
 
+cells = neighborCells;
 countStart = -1;
-For[i=0, i < 100 && countStart != Length[cell1], i++,
-	countStart = Length[cell1];
-	For[mirrorIndex = Length[activeMirrors], mirrorIndex >= 1, mirrorIndex--,
-		Print[{countStart, mirrorIndex}];
-		cell1 = Union[cell1, Map[reflect[#, activeMirrors[[mirrorIndex]] ]&, cell1, {2}], 
-			SameTest -> sameCenter];
-	];
-]
-Print["Each cell contains " <> IntegerString[Length[cell1]] <> " faces."];
-
-
-(* seeds = {
-{1, 1, 1+4 phi, 5+12 phi},
-{1, phi^3, 3+2 phi, 5+12 phi},
-{2, phi^2, phi^4, 5+12 phi},
-{phi^2, 3 phi, 2 phi^2, 5+12 phi},
-{2+phi, 2 phi, 1+3 phi, 5+12 phi}
-	};
-Print[];
-Print[seeds//N];
-Print[Norm[seeds[[1]] - seeds[[3]]]//N];
-Print[seeds[[1]] - seeds[[3]]//N];
- *)
-
-(* face1 = {vertex1};
-finished = False;
-For[i=0, i < 100 && finished == False, i++,
-	newVertex = doubleReflect[face1[[-1]], mirrors[[1]], mirrors[[2]]];
-	If[newVertex != face1[[1]],
-		AppendTo[face1, newVertex],
-		finished = True;
-	]
-]
-Print["Each face contains " <> IntegerString[Length[face1]] <> " vertices."];
-
-cell1 = {face1};
-countStart = -1;
-For[i=0, i < 100 && countStart != Length[cell1], i++,
-	countStart = Length[cell1];
-	
-	For[mirrorIndex = 3, mirrorIndex >= 1, mirrorIndex--,
-		cell1 = Union[cell1, Map[reflect[#, mirrors[[mirrorIndex]] ]&, cell1, {2}], SameTest -> sameCenter];
-	];
-]
-Print["Each cell contains " <> IntegerString[Length[cell1]] <> " faces."];
-
-cells = {cell1};
- *)
-(* countStart = -1;
-mirrorCount = If[AllCells, 4, 3];
+mirrorCount = 3;
 
 For[i=0, i < 100 && countStart != Length[cells], i++,
-	countStart = Length[cells];
-	
-	For[mirrorIndex = mirrorCount, mirrorIndex >= 1, mirrorIndex--,
-		cells = Union[cells, Map[reflect[#, mirrors[[mirrorIndex]] ]&, cells, {3}], SameTest -> sameCellCenter];
-	];
+    countStart = Length[cells];
 
-	Print["Generated " <> IntegerString[Length[cells]] <> " cells so far."];
-] *)
+    For[mirrorIndex = 1, mirrorIndex <= mirrorCount, mirrorIndex++,
+        Print[{i, mirrorIndex, Length[cells]}];
+        cells = Union[cells, Map[reflect[#, mirrors[[mirrorIndex]] ]&, cells, {3}], SameTest -> sameNCellCenter];
+        cells = Simplify[cells];
+    ];
+    Print["Generated " <> IntegerString[Length[cells]] <> " cells so far."];
+];
 
-(*
-cells = Union[cells, Map[reflect[#, mirrors[[4]] ]&, cells, {3}], SameTest -> sameCellCenter];
-*)
+Print["There are " <> IntegerString[Length[cells]] <> " cells in total."];
 
-(* Print["There are " <> IntegerString[Length[cells]] <> " cells in total."]; *)
-
-(* If[FileExistsQ[dataFileName], DeleteFile[dataFileName]];
+If[FileExistsQ[dataFileName], DeleteFile[dataFileName]];
 Save[dataFileName, cells];
 Print["Saved cells to " <> dataFileName];
- *)
