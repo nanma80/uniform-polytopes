@@ -17,6 +17,11 @@ plotNet = True;
 selectedCellSides = {14, 8};
 selectedCellSides = {14, 8, 62};
 selectedCellSides = {14, 8, 62, 12};
+colors = {Red, Blue, Green, Yellow};
+
+(* only center *)
+(* selectedCellSides = {62};
+colors = {Green}; *)
 
 (* comment out one or two of the lines below *)
 (* showFaces = False; *)
@@ -26,7 +31,6 @@ showWireframe = False;
 Needs["POVRayRender`"];
 ConfigurePOVRayRender["POVRayPath" -> "C:\\Program Files\\POV-Ray\\v3.7\\bin\\pvengine64.exe"];
 
-colors = {Red, Blue, Green, Yellow};
 getProjectionMatrix[direction_] := Simplify[Orthogonalize[{direction, {1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}}]][[2;;4]];
 projectTo3d[vertex4d_] := {vertex4d[[1]], vertex4d[[2]], vertex4d[[3]]};
 reflect[point_, mirror_] := Simplify[point - 2 * (point.mirror)/(mirror.mirror)*mirror];
