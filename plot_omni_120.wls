@@ -12,10 +12,11 @@ imageSize = 150 * {4, 3};
 faceOpacity = 1.0;
 showFaces = True;
 showWireframe = True;
+plotNet = True;
 
 selectedCellSides = {14, 8};
 selectedCellSides = {14, 8, 62};
-(* selectedCellSides = {14, 8, 62, 12}; *)
+selectedCellSides = {14, 8, 62, 12};
 
 (* comment out one or two of the lines below *)
 (* showFaces = False; *)
@@ -38,6 +39,22 @@ sameCenter[edge1_, edge2_] := Total[edge1] == Total[edge2];
 sameCellCenter[cell1_, cell2_] := getCellCenter[cell1] == getCellCenter[cell2];
 sameNCellCenter[cell1_, cell2_] := Norm[getCellCenter[N[cell1]] - getCellCenter[N[cell2]]] < epsilon;
 getCellCenter[cell_] := Mean[Flatten[cell, 1]];
+getAngle[v1_, v2_] := ArcCos[v1.v2/Norm[v1]/Norm[v2]];
+rotateCell[cell_, centerCell_] := Module[
+    {intFace, intFaceCenter, wDirection, vertexCenter, angle, xyzDirection, rotMat},
+    intFace = Intersection[centerCell, cell, SameTest -> sameCenter][[1]];
+    intFaceCenter = Mean[intFace]//Simplify;
+
+    wDirection = {0, 0, 0, 1};
+    vertexCenter = getCellCenter[cell];
+    angle = getAngle[wDirection, vertexCenter]//Simplify;
+    xyzDirection = vertexCenter - (vertexCenter.wDirection)*wDirection//Simplify;
+    xyzDirection = xyzDirection/Norm[xyzDirection]//Simplify;
+
+    rotMat = IdentityMatrix[4] - Transpose[{wDirection, xyzDirection}].{wDirection, xyzDirection} + Transpose[{wDirection, xyzDirection}].RotationMatrix[angle].{wDirection, xyzDirection};
+    Map[#.rotMat + intFaceCenter.(IdentityMatrix[4] - rotMat)&, cell, {2}]
+];
+
 
 phi = (1 + Sqrt[5])/2;
 
@@ -45,6 +62,16 @@ cells = Get[dataFileName];
 Print["Total cell count: " <> IntegerString[cells//Length]];
 cellTypes = Tally[Map[Length, cells]];
 Map[Print[IntegerString[#[[1]]] <> "-hedron * " <> IntegerString[#[[2]]]]&, cellTypes];
+
+thickness = Norm[cells[[1]][[1]][[1]]] * 0.002;
+range = Norm[cells[[1]][[1]][[1]]] * rangeFactor;
+lighting = {{"Point", White, {10, -10, 10}}};
+
+If[plotNet,
+    Print["rotating cells to make net"];
+    centerCell = Select[cells, (Length[#] == 62 &)][[1]];
+    cells = Map[If[Length[#] == 62, #, rotateCell[#, centerCell]]&, cells]
+];
 
 selectedCells = {};
 For[i=1, i<= Length[selectedCellSides], i++,
@@ -58,22 +85,20 @@ selectedFaces = Map[Flatten[#, 1]&, selectedCells];
 Print["face counts"];
 Print[Length/@selectedFaces];
 
-selectedEdges = Map[
-    Union[ Flatten[Map[getEdgesFromFace, #], 1], SameTest -> sameCenter]&,
-    selectedFaces];
-Print["edge counts"];
-Print[Length/@selectedEdges];
+If[showWireframe,
+    selectedEdges = Map[
+         Flatten[Map[getEdgesFromFace, #], 1]&,
+        selectedFaces];
+    Print["edge counts"];
+    Print[Length/@selectedEdges];
 
-selectedVertices = Map[
-    Union[ Flatten[#, 1], SameTest -> sameVertex]&,
-    selectedFaces
+    selectedVertices = Map[
+        Flatten[#, 1]&,
+        selectedFaces
+    ];
+    Print["vertices counts"];
+    Print[Length/@selectedVertices];
 ];
-Print["vertices counts"];
-Print[Length/@selectedVertices];
-
-thickness = Norm[cells[[1]][[1]][[1]]] * 0.002;
-range = Norm[cells[[1]][[1]][[1]]] * rangeFactor;
-lighting = {{"Point", White, {10, -10, 10}}};
 
 graphElements = {};
 
@@ -119,6 +144,7 @@ outputFileName = shape <>
                     If[showFaces, "_faces", ""] <> 
                     If[showWireframe, "_wireframe", ""] <> 
                     "_" <> IntegerString[Length[selectedCells]] <>
+                    If[plotNet, "_net", ""] <>
                     ".png";
 outputFileName = FileNameJoin[{outputFolder, outputFileName}];
 cropCommand = "mogrify -crop " <> IntegerString[imageSize[[2]]] <> "x" <> IntegerString[imageSize[[2]]] <> "+" <> IntegerString[(imageSize[[1]]-imageSize[[2]])/2] <> "+0 " <> outputFileName;
