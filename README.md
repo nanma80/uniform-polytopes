@@ -16,4 +16,4 @@ Then, we attach a truncated octahedron to each of its hexagonal face, and a hexa
 
 This is part of the center part of the "net" of the polytope. Then we bend these cells a little bit to the 4th dimension to fill the gaps.
 
-In high school, when I bend the paper model to fit the parts together, I was simulating the 4th dimension.
+In high school, when I bent the paper model to fit the parts together, I was simulating the 4th dimension.
