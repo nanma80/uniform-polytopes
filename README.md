@@ -4,7 +4,7 @@ Back in high school, I made a paper model of this (I don't have photos of the or
 
 ![stick-and-ball model](https://raw.githubusercontent.com/nanma80/uniform-polytopes/master/output/omni_120/omni_120_faces_2.png "stick-and-ball model")
 
-It's roughly a ball-and-stick model, where balls are truncated octahedra, and sticks are hexagonal prisms. This model is unique because it is not "valid". It's a near miss. A truncated octahedron provides an angle of 109.5 degrees ( arccos(-1/3) ). However, the pentagon requires an angle of 108 degrees. It misses by 1.5 degrees. On a paper model, it was bearly noticable, especially because I inserted the "sticks" into the holes of the balls. Essentially I forced the paper model to bend a bit.
+It's roughly a ball-and-stick model, where balls are truncated octahedra, and sticks are hexagonal prisms. This model is unique because it is not "valid". It's a near miss. A truncated octahedron provides an angle of 109.5 degrees ( arccos(-1/3) ). However, the pentagon requires an angle of 108 degrees. It misses by 1.5 degrees. On a paper model, it was barely noticable, especially because I inserted the "sticks" into the holes of the balls. Essentially I forced the paper model to bend a bit.
 
 Several years later, I found that what I had is part of the Omnitruncated 120-cell. See [Eusebeia's page](http://eusebeia.dyndns.org/4d/omni120cell) for pictures. The polyhedra fit together there because they bend to the 4th dimension. In Omnitruncated 120-cell, we start from a great rhombicosidodecahedron.
 
