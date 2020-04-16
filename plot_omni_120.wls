@@ -9,11 +9,23 @@ dataFileName = FileNameJoin[{dataFolder, shape <> ".wl"}];
 rangeFactor = 0.35;
 exportToPov = True;
 imageSize = 150 * {4, 3};
+faceOpacity = 1.0;
+showFaces = True;
+showWireframe = True;
+
+selectedCellSides = {14, 8};
+selectedCellSides = {14, 8, 62};
+(* selectedCellSides = {14, 8, 62, 12}; *)
+
+(* comment out one or two of the lines below *)
+(* showFaces = False; *)
+showWireframe = False;
+
 
 Needs["POVRayRender`"];
 ConfigurePOVRayRender["POVRayPath" -> "C:\\Program Files\\POV-Ray\\v3.7\\bin\\pvengine64.exe"];
 
-colors = Join[{Red, Blue, Green, Yellow, Magenta, Cyan, Brown, Orange, Pink, Purple}, RandomColor[10]];
+colors = {Red, Blue, Green, Yellow};
 getProjectionMatrix[direction_] := Simplify[Orthogonalize[{direction, {1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}}]][[2;;4]];
 projectTo3d[vertex4d_] := {vertex4d[[1]], vertex4d[[2]], vertex4d[[3]]};
 reflect[point_, mirror_] := Simplify[point - 2 * (point.mirror)/(mirror.mirror)*mirror];
@@ -30,35 +42,72 @@ getCellCenter[cell_] := Mean[Flatten[cell, 1]];
 phi = (1 + Sqrt[5])/2;
 
 cells = Get[dataFileName];
-Print["cells: " <> IntegerString[cells//Length]];
+Print["Total cell count: " <> IntegerString[cells//Length]];
+cellTypes = Tally[Map[Length, cells]];
+Map[Print[IntegerString[#[[1]]] <> "-hedron * " <> IntegerString[#[[2]]]]&, cellTypes];
 
-faces = Flatten[cells, 1];
-Print["faces: " <> IntegerString[faces//Length]];
+selectedCells = {};
+For[i=1, i<= Length[selectedCellSides], i++,
+    AppendTo[selectedCells, Select[cells, (Length[#] == selectedCellSides[[i]] &)]];
+];
 
-edges = Union[ Flatten[Map[getEdgesFromFace, faces], 1], SameTest -> sameCenter];
-Print["edges: " <> IntegerString[edges//Length]];
+Print["Selected cell counts"];
+Print[Length/@selectedCells];
 
-vertices = Union[ Flatten[faces, 1], SameTest -> sameVertex];
-Print["vertices: " <> IntegerString[vertices//Length]];
+selectedFaces = Map[Flatten[#, 1]&, selectedCells];
+Print["face counts"];
+Print[Length/@selectedFaces];
 
-color = colors[[1]];
-thickness = Norm[cells[[1]][[1]][[1]]] * 0.008;
+selectedEdges = Map[
+    Union[ Flatten[Map[getEdgesFromFace, #], 1], SameTest -> sameCenter]&,
+    selectedFaces];
+Print["edge counts"];
+Print[Length/@selectedEdges];
+
+selectedVertices = Map[
+    Union[ Flatten[#, 1], SameTest -> sameVertex]&,
+    selectedFaces
+];
+Print["vertices counts"];
+Print[Length/@selectedVertices];
+
+thickness = Norm[cells[[1]][[1]][[1]]] * 0.002;
 range = Norm[cells[[1]][[1]][[1]]] * rangeFactor;
 lighting = {{"Point", White, {10, -10, 10}}};
 
+graphElements = {};
+
+For[ typeIndex = 1, typeIndex <= Length[selectedCells], typeIndex++,
+    If[showFaces,
+        AppendTo[graphElements,
+            {
+                Opacity[faceOpacity], FaceForm[Lighter[colors[[typeIndex]], 0.2]], 
+                Map[Polygon, Map[projectTo3d, selectedFaces[[typeIndex]], {2}]]
+            }
+        ];
+    ];
+
+    If[showWireframe,
+        AppendTo[graphElements,
+            {
+                FaceForm[White], 
+                Map[Cylinder[#, thickness]&, Map[projectTo3d, selectedEdges[[typeIndex]], {2}]]
+            }
+        ];
+
+        AppendTo[graphElements,
+            {
+                FaceForm[White], 
+                Map[Sphere[#, thickness * 2]&, Map[projectTo3d, selectedVertices[[typeIndex]]]]
+            }
+        ];
+    ];
+];
+
 graph = Graphics3D[
-    {
-        {
-            Opacity[0.4], FaceForm[Lighter[color, 0.3]], Map[Polygon, Map[projectTo3d, faces, {2}]]
-        },
-        {
-            FaceForm[White], Map[Cylinder[#, thickness]&, Map[projectTo3d, edges, {2}]]
-        },
-        {
-            FaceForm[White], Map[Sphere[#, thickness * 2]&, Map[projectTo3d, vertices]]
-        }
-    },
-    ViewPoint -> {3, -4, 5}*3,
+    graphElements,
+    ViewPoint -> {3, -3, 0} * 10,
+    ViewVertical -> {1, 0, phi},
     PlotRange -> {{-range, range}, {-range, range}, {-range, range}},
     Lighting -> lighting
 ];
@@ -66,7 +115,11 @@ graph = Graphics3D[
 outputFolder = FileNameJoin[{imageFolder, shape}];
 If[!DirectoryQ[outputFolder], CreateDirectory[outputFolder]];
 
-outputFileName = shape <> "_all.png";
+outputFileName = shape <> 
+                    If[showFaces, "_faces", ""] <> 
+                    If[showWireframe, "_wireframe", ""] <> 
+                    "_" <> IntegerString[Length[selectedCells]] <>
+                    ".png";
 outputFileName = FileNameJoin[{outputFolder, outputFileName}];
 cropCommand = "mogrify -crop " <> IntegerString[imageSize[[2]]] <> "x" <> IntegerString[imageSize[[2]]] <> "+" <> IntegerString[(imageSize[[1]]-imageSize[[2]])/2] <> "+0 " <> outputFileName;
 
