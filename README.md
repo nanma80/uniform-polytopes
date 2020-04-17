@@ -6,9 +6,9 @@ Back in high school, I made a paper model of this (I don't have photos of the or
 
 It's roughly a ball-and-stick model, where balls are truncated octahedra, and sticks are hexagonal prisms. This model is unique because it is not "valid". It's a near miss. A truncated octahedron provides an angle of 109.5 degrees ( arccos(-1/3) ). However, the pentagon requires an angle of 108 degrees. It misses by 1.5 degrees. On a paper model, it was barely noticable, especially because I inserted the "sticks" into the holes of the balls. Essentially I forced the paper model to bend a bit.
 
-Several years later, I found that this near-miss construction is not a mere coincidence. It is part of the omnitruncated 120-cell. See [Eusebeia's page](http://eusebeia.dyndns.org/4d/omni120cell) for pictures. The polyhedra fit together there because they "fold" to the 4th dimension. To construct part of the omnitruncated 120-cell, we start from a great rhombicosidodecahedron.
+Several years later, I found that this near-miss construction is not a mere coincidence. It is part of the omnitruncated 120-cell. See [Eusebeia's page](http://eusebeia.dyndns.org/4d/omni120cell) for pictures. The polyhedra fit together there because they "fold" to the 4th dimension. To construct part of the omnitruncated 120-cell, we start from a truncated icosidodecahedron.
 
-![great rhombicosidodecahedron](https://raw.githubusercontent.com/nanma80/uniform-polytopes/master/output/omni_120/omni_120_faces_1_net.png "great rhombicosidodecahedron")
+![truncated icosidodecahedron](https://raw.githubusercontent.com/nanma80/uniform-polytopes/master/output/omni_120/omni_120_faces_1_net.png "truncated icosidodecahedron")
 
 Then, we attach a truncated octahedron to each of its hexagonal face, and a hexagonal prism to each of its square face. If we only leave them in the 3D space without using the 4th dimension, we see tiny gaps (thin black lines between polyhedra).
 
