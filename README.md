@@ -1,8 +1,8 @@
-# Near-miss stick-and-ball model
+# Near-miss ball-and-stick model
 
 Back in high school, I made a paper model of this (I don't have photos of the original model). 
 
-![stick-and-ball model](https://raw.githubusercontent.com/nanma80/uniform-polytopes/master/output/omni_120/omni_120_faces_2.png "stick-and-ball model")
+![ball-and-stick model](https://raw.githubusercontent.com/nanma80/uniform-polytopes/master/output/omni_120/omni_120_faces_2.png "ball-and-stick model")
 
 It's roughly a ball-and-stick model, where balls are truncated octahedra, and sticks are hexagonal prisms. This model is unique because it is not "valid". It's a near miss. A truncated octahedron provides an angle of 109.5 degrees ( arccos(-1/3) ). However, the pentagon requires an angle of 108 degrees. It misses by 1.5 degrees. On a paper model, it was barely noticable, especially because I inserted the "sticks" into the holes of the balls. Essentially I forced the paper model to bend a bit.
 
